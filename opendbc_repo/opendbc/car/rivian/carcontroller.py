@@ -1,12 +1,17 @@
 import numpy as np
 from opendbc.can import CANPacker
 from opendbc.car import Bus
-from opendbc.car.lateral import apply_driver_steer_torque_limits
+from opendbc.car.lateral import apply_driver_steer_torque_limits, common_fault_avoidance
 from opendbc.car.interfaces import CarControllerBase
 from opendbc.car.rivian.riviancan import create_lka_steering, create_longitudinal, create_wheel_touch, create_adas_status
 from opendbc.car.rivian.values import CarControllerParams
 
 from opendbc.sunnypilot.car.rivian.mads import MadsCarController
+
+# EPS may fault if torque is applied above this angle for too long; cut request + drop torque before fault
+MAX_ANGLE = 87  # deg, margin before 90° fault threshold
+MAX_ANGLE_FRAMES = 89  # ~1.8s at 50 Hz before cutting
+MAX_ANGLE_CONSECUTIVE_FRAMES = 1  # frames to cut before re-enabling
 
 
 class CarController(CarControllerBase, MadsCarController):
@@ -15,7 +20,7 @@ class CarController(CarControllerBase, MadsCarController):
     MadsCarController.__init__(self)
     self.apply_torque_last = 0
     self.packer = CANPacker(dbc_names[Bus.pt])
-
+    self.angle_limit_counter = 0
     self.cancel_frames = 0
 
   def update(self, CC, CC_SP, CS, now_nanos):
@@ -31,9 +36,16 @@ class CarController(CarControllerBase, MadsCarController):
       apply_torque = apply_driver_steer_torque_limits(new_torque, self.apply_torque_last,
                                                       CS.out.steeringTorque, CarControllerParams, steer_max)
 
+    # Fault avoidance: cut request + drop torque when steering angle above limit for too long
+    self.angle_limit_counter, apply_steer_req = common_fault_avoidance(
+      abs(CS.out.steeringAngleDeg) >= MAX_ANGLE, CC.latActive,
+      self.angle_limit_counter, MAX_ANGLE_FRAMES, MAX_ANGLE_CONSECUTIVE_FRAMES)
+    if not apply_steer_req:
+      apply_torque = 0
+
     # send steering command
     self.apply_torque_last = apply_torque
-    can_sends.append(create_lka_steering(self.packer, self.frame, CS.acm_lka_hba_cmd, apply_torque, CC.enabled, CC.latActive, self.mads))
+    can_sends.append(create_lka_steering(self.packer, self.frame, CS.acm_lka_hba_cmd, apply_torque, CC.enabled, CC.latActive, self.mads, apply_steer_req))
 
     if self.frame % 5 == 0:
       can_sends.append(create_wheel_touch(self.packer, CS.sccm_wheel_touch, CC.enabled))
