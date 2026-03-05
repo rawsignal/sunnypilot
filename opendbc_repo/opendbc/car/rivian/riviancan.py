@@ -37,7 +37,7 @@ def create_lka_steering(packer, frame, acm_lka_hba_cmd, apply_torque, enabled, a
     #"ACM_lkaHandsoffDisplayWarning": 1,  # TODO: we can send this when openpilot wants you to pay attention
   }
   if mads.lat_active:
-    values["ACM_lkaActToi"] = 1
+    values["ACM_lkaActToi"] = 1 if apply_steer_req else 0  # 0 during fault-avoidance blip
 
   data = packer.make_can_msg("ACM_lkaHbaCmd", 0, values)[1]
   values["ACM_lkaHbaCmd_Checksum"] = checksum(data[1:], 0x1D, 0x63)
