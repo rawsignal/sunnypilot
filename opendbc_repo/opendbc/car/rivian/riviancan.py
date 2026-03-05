@@ -18,12 +18,12 @@ def create_lka_steering(packer, frame, acm_lka_hba_cmd, apply_torque, enabled, a
     "ACM_hbaLamp",
     "ACM_hbaOnOffState",
     "ACM_slifOnOffState",
+    "ACM_lkaActToi",
   )}
 
   values |= {
     "ACM_lkaHbaCmd_Counter": frame % 15,
     "ACM_lkaStrToqReq": apply_torque,
-    "ACM_lkaActToi": 0,
     "ACM_lkaLaneRecogState": 0,
     "ACM_lkaSymbolState": 0,
 
@@ -36,6 +36,8 @@ def create_lka_steering(packer, frame, acm_lka_hba_cmd, apply_torque, enabled, a
     "ACM_ldwWarnTimingState": 1,  # always 1
     #"ACM_lkaHandsoffDisplayWarning": 1,  # TODO: we can send this when openpilot wants you to pay attention
   }
+  if mads.lat_active:
+    values["ACM_lkaActToi"] = 1
 
   data = packer.make_can_msg("ACM_lkaHbaCmd", 0, values)[1]
   values["ACM_lkaHbaCmd_Checksum"] = checksum(data[1:], 0x1D, 0x63)
