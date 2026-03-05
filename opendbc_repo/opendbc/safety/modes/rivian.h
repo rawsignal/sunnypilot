@@ -96,6 +96,7 @@ static void rivian_rx_hook(const CANPacket_t *msg) {
 
 static bool rivian_tx_hook(const CANPacket_t *msg) {
   // Rivian utilizes more torque at low speed to maintain the same lateral accel
+  // has_steer_req_tolerance allows fault-avoidance blip: ACM_lkaActToi=0 for 2 frames while holding torque
   const TorqueSteeringLimits RIVIAN_STEERING_LIMITS = {
     .max_torque = 350,
     .dynamic_max_torque = true,
@@ -109,6 +110,10 @@ static bool rivian_tx_hook(const CANPacket_t *msg) {
     .driver_torque_multiplier = 2,
     .driver_torque_allowance = 100,
     .type = TorqueDriverLimited,
+    .min_valid_request_frames = 17,  // must exceed test_steer_req_bit's 10 pre-frames
+    .max_invalid_request_frames = 2,
+    .min_valid_request_rt_interval = 162000,  // 162ms; ~10% buffer, matches SteerRequestCutSafetyTest
+    .has_steer_req_tolerance = true,
   };
 
   const LongitudinalLimits RIVIAN_LONG_LIMITS = {
