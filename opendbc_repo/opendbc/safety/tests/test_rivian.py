@@ -36,7 +36,7 @@ class TestRivianSafetyBase(common.CarSafetyTest, common.DriverTorqueSteeringSafe
 
   MAX_RT_DELTA = 125
 
-  MIN_VALID_STEERING_FRAMES = 17
+  MIN_VALID_STEERING_FRAMES = 89
   MAX_INVALID_STEERING_FRAMES = 2
 
   DRIVER_TORQUE_ALLOWANCE = 100

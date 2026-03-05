@@ -21,9 +21,13 @@ def create_lka_steering(packer, frame, acm_lka_hba_cmd, apply_torque, enabled, a
     "ACM_lkaActToi",
   )}
 
+  # ACM_lkaToiFlt = 1 during fault-avoidance blip (like Hyundai CF_Lkas_ToiFlt) - tells EPS to accept torque when ActToi=0
+  torque_fault = mads.lat_active and not apply_steer_req
+
   values |= {
     "ACM_lkaHbaCmd_Counter": frame % 15,
     "ACM_lkaStrToqReq": apply_torque,
+    "ACM_lkaToiFlt": 1 if torque_fault else 0,
     "ACM_lkaLaneRecogState": 0,
     "ACM_lkaSymbolState": 0,
 
