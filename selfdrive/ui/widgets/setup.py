@@ -19,15 +19,21 @@ class SetupWidget(Widget):
     self._open_settings_btn = Button(lambda: tr("Open"), lambda: self._open_settings_callback() if self._open_settings_callback else None,
                                      button_style=ButtonStyle.PRIMARY)
     self._firehose_label = Label(lambda: tr("🔥 Firehose Mode 🔥"), font_weight=FontWeight.MEDIUM, font_size=64)
+    self._enable_firehose_btn = Button(lambda: tr("Enable Firehose Mode"), self._enable_firehose, button_style=ButtonStyle.PRIMARY)
 
   def set_open_settings_callback(self, callback):
     self._open_settings_callback = callback
 
+  def _enable_firehose(self):
+    ui_state.params.put_bool("IsFirehoseEnabled", True)
+
   def _render(self, rect: rl.Rectangle):
     if not ui_state.prime_state.is_paired():
       self._render_registration(rect)
-    else:
+    elif ui_state.params.get_bool("IsFirehoseEnabled"):
       self._render_firehose_prompt(rect)
+    else:
+      self._render_setup_complete(rect)
 
   def _render_registration(self, rect: rl.Rectangle):
     """Render registration prompt."""
@@ -84,6 +90,30 @@ class SetupWidget(Widget):
     button_height = 48 + 64  # font size + padding
     button_rect = rl.Rectangle(x, y, w, button_height)
     self._open_settings_btn.render(button_rect)
+
+  def _render_setup_complete(self, rect: rl.Rectangle):
+    """Render setup complete when paired but firehose disabled."""
+    rl.draw_rectangle_rounded(rl.Rectangle(rect.x, rect.y, rect.width, 400), 0.04, 20, rl.Color(51, 51, 51, 255))
+
+    x = rect.x + 56
+    y = rect.y + 40
+    w = rect.width - 112
+    spacing = 32
+
+    font = gui_app.font(FontWeight.BOLD)
+    rl.draw_text_ex(font, tr("Setup complete"), rl.Vector2(x, y), 64, 0, rl.WHITE)
+    y += 64 + spacing
+
+    desc_font = gui_app.font(FontWeight.NORMAL)
+    desc_text = tr("Enable Firehose Mode to contribute training data and improve openpilot's driving models.")
+    wrapped_desc = wrap_text(desc_font, desc_text, 36, int(w))
+    for line in wrapped_desc:
+      rl.draw_text_ex(desc_font, line, rl.Vector2(x, y), 36, 0, rl.Color(228, 228, 228, 255))
+      y += 36 * FONT_SCALE
+
+    y += spacing
+    button_rect = rl.Rectangle(x, y, w, 112)
+    self._enable_firehose_btn.render(button_rect)
 
   @staticmethod
   def _show_pairing():

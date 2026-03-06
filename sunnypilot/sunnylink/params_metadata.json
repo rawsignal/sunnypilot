@@ -470,6 +470,10 @@
     "title": "Is Engaged",
     "description": ""
   },
+  "IsFirehoseEnabled": {
+    "title": "Firehose Mode",
+    "description": "Enable to maximize training data uploads to improve openpilot's driving models."
+  },
   "IsLdwEnabled": {
     "title": "Lane Departure Warnings",
     "description": ""

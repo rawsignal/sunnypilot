@@ -189,6 +189,9 @@ class FirehoseLayoutBase(Widget):
     return y
 
   def _get_status(self) -> tuple[str, rl.Color]:
+    if not self._params.get_bool("IsFirehoseEnabled"):
+      return tr("DISABLED: enable in Toggles to contribute"), self.GRAY
+
     network_type = ui_state.sm["deviceState"].networkType
     network_metered = ui_state.sm["deviceState"].networkMetered
 
