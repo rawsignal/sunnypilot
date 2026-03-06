@@ -31,7 +31,7 @@ class TestRivianSafetyBase(common.CarSafetyTest, common.DriverTorqueSteeringSafe
 
   MAX_TORQUE_LOOKUP = [9, 17], [350, 250]
   DYNAMIC_MAX_TORQUE = True
-  MAX_RATE_UP = 3
+  MAX_RATE_UP = 4
   MAX_RATE_DOWN = 5
 
   MAX_RT_DELTA = 125
