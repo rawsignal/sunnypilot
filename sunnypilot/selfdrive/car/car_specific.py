@@ -48,4 +48,9 @@ class CarSpecificEventsSP:
           if events.has(EventName.resumeRequired):
             events.remove(EventName.resumeRequired)
 
+    elif self.CP.brand == 'rivian':
+      # In park: fully disable MADS (not just pause). Car-specific since mads.py cannot be changed.
+      if events.has(EventName.wrongGear) and CS.gearShifter == GearShifter.park:
+        events_sp.add(EventNameSP.lkasDisable)
+
     return events_sp
