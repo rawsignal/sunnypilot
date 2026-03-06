@@ -9,7 +9,7 @@ from opendbc.car.rivian.values import CarControllerParams
 from opendbc.sunnypilot.car.rivian.mads import MadsCarController
 
 # EPS may fault if torque is applied above this angle for too long; cut request + drop torque before fault
-MAX_ANGLE = 87  # deg, margin before 90° fault threshold
+MAX_ANGLE = 90  # deg
 MAX_ANGLE_FRAMES = 89  # ~0.9s at 100 Hz before cutting (matches Hyundai)
 MAX_ANGLE_CONSECUTIVE_FRAMES = 1  # frames to cut before re-enabling (blip)
 
