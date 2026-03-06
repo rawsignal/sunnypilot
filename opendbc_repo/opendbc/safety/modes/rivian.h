@@ -98,11 +98,11 @@ static bool rivian_tx_hook(const CANPacket_t *msg) {
   // Rivian utilizes more torque at low speed to maintain the same lateral accel
   // Fault avoidance blip drops torque to 0, so no steer_req tolerance needed
   const TorqueSteeringLimits RIVIAN_STEERING_LIMITS = {
-    .max_torque = 500,
+    .max_torque = 450,
     .dynamic_max_torque = true,
     .max_torque_lookup = {
       {9., 17., 17.},
-      {500, 250, 250},
+      {450, 250, 250},
     },
     .max_rate_up = 4,
     .max_rate_down = 5,
