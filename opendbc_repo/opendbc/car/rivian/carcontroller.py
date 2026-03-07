@@ -12,7 +12,7 @@ from opendbc.sunnypilot.car.rivian.mads import MadsCarController
 MAX_ANGLE = 85  # deg (matches Hyundai)
 MAX_ANGLE_FRAMES = 89  # ~0.9s at 100 Hz before cutting (matches Hyundai)
 MAX_ANGLE_CONSECUTIVE_FRAMES = 2  # frames to cut before re-enabling (blip)
-BLIP_RECOVERY_RAMP = 20  # torque units per frame when ramping back after blip
+BLIP_RECOVERY_RAMP = 40  # torque units per frame when ramping back after blip
 
 
 class CarController(CarControllerBase, MadsCarController):
