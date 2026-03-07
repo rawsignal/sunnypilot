@@ -23,7 +23,8 @@ def checksum(msg):
 
 
 class TestRivianSafetyBase(common.CarSafetyTest, common.DriverTorqueSteeringSafetyTest,
-                           common.LongitudinalAccelSafetyTest, common.VehicleSpeedSafetyTest):
+                           common.SteerRequestCutSafetyTest, common.LongitudinalAccelSafetyTest,
+                           common.VehicleSpeedSafetyTest):
 
   TX_MSGS = [[0x120, 0]]
   RELAY_MALFUNCTION_ADDRS = {0: (0x120,), 2: ()}
@@ -38,6 +39,10 @@ class TestRivianSafetyBase(common.CarSafetyTest, common.DriverTorqueSteeringSafe
 
   DRIVER_TORQUE_ALLOWANCE = 100
   DRIVER_TORQUE_FACTOR = 2
+
+  # Fault avoidance blip: hold torque for 1 frame (like Hyundai)
+  MIN_VALID_STEERING_FRAMES = 89
+  MAX_INVALID_STEERING_FRAMES = 1
 
   cnt_speed = 0
   cnt_speed_2 = 0
