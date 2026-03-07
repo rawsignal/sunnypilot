@@ -2,7 +2,7 @@ import numpy as np
 from types import SimpleNamespace
 
 from opendbc.can import CANPacker
-from opendbc.car import Bus
+from opendbc.car import Bus, make_tester_present_msg
 from opendbc.car.lateral import apply_driver_steer_torque_limits, common_fault_avoidance
 from opendbc.car.interfaces import CarControllerBase
 from opendbc.car.rivian.riviancan import create_lka_steering, create_longitudinal
@@ -71,6 +71,9 @@ class CarController(CarControllerBase, MadsCarController):
 
     # Longitudinal control
     if self.CP.openpilotLongitudinalControl:
+      # tester present - keeps ADAS ECU disabled (same method as Hyundai HDA2)
+      if self.frame % 100 == 0:
+        can_sends.append(make_tester_present_msg(0x730, 0, suppress_response=True))
       accel = float(np.clip(actuators.accel, CarControllerParams.ACCEL_MIN, CarControllerParams.ACCEL_MAX))
       can_sends.append(create_longitudinal(self.packer, self.frame, accel, CC.enabled))
     # VDM_AdasSts not available on this tap - cannot cancel stock ACC
