@@ -11,10 +11,9 @@ from opendbc.car.rivian.values import CarControllerParams
 from opendbc.sunnypilot.car.rivian.mads import MadsCarController
 
 # EPS may fault if torque is applied above this angle for too long; cut request + drop torque before fault
-MAX_ANGLE = 85  # deg (matches Hyundai)
+MAX_ANGLE = 87  # deg
 MAX_ANGLE_FRAMES = 89  # ~0.9s at 100 Hz before cutting (matches Hyundai)
 MAX_ANGLE_CONSECUTIVE_FRAMES = 2  # frames to cut before re-enabling (blip)
-BLIP_RECOVERY_RAMP = 40  # torque units per frame when ramping back after blip
 
 
 class CarController(CarControllerBase, MadsCarController):
@@ -24,7 +23,7 @@ class CarController(CarControllerBase, MadsCarController):
     self.apply_torque_last = 0
     self.packer = CANPacker(dbc_names[Bus.pt])
     self.angle_limit_counter = 0
-    self.recovering_from_blip = False
+    self.torque_before_blip = 0
 
   def update(self, CC, CC_SP, CS, now_nanos):
     MadsCarController.update(self, CC, CC_SP, CS)
@@ -40,33 +39,28 @@ class CarController(CarControllerBase, MadsCarController):
       abs(CS.out.steeringAngleDeg) >= MAX_ANGLE, CC.latActive,
       self.angle_limit_counter, MAX_ANGLE_FRAMES, MAX_ANGLE_CONSECUTIVE_FRAMES)
 
-    # Zero torque during blip, ramp back at BLIP_RECOVERY_RAMP per frame when recovery
+    # Zero torque during blip; after blip, apply same value we had before (snap back)
     if not apply_steer_req:
+      if self.apply_torque_last != 0:
+        self.torque_before_blip = self.apply_torque_last
       apply_torque = 0
       self.apply_torque_last = 0
-      self.recovering_from_blip = False
     else:
-      if self.apply_torque_last == 0:
-        self.recovering_from_blip = True
       if self.mads.lat_active:
         new_torque = int(round(CC.actuators.torque * steer_max))
-        # Use faster ramp rate during blip recovery (bypass normal STEER_DELTA_UP=4 limit)
-        if self.recovering_from_blip:
-          recovery_params = SimpleNamespace(
+        if self.apply_torque_last == 0 and self.torque_before_blip != 0:
+          # Snap back: apply same value, bypass rate limit but keep driver/steer limits
+          snap_params = SimpleNamespace(
             STEER_MAX=CarControllerParams.STEER_MAX,
-            STEER_DELTA_UP=BLIP_RECOVERY_RAMP,
-            STEER_DELTA_DOWN=BLIP_RECOVERY_RAMP,
+            STEER_DELTA_UP=steer_max,
+            STEER_DELTA_DOWN=steer_max,
             STEER_DRIVER_ALLOWANCE=CarControllerParams.STEER_DRIVER_ALLOWANCE,
             STEER_DRIVER_MULTIPLIER=CarControllerParams.STEER_DRIVER_MULTIPLIER,
             STEER_DRIVER_FACTOR=CarControllerParams.STEER_DRIVER_FACTOR,
           )
-          apply_torque = apply_driver_steer_torque_limits(new_torque, self.apply_torque_last,
-                                                          CS.out.steeringTorque, recovery_params, steer_max)
-          # Reached target when rate limiter didn't need to clamp (we've caught up)
-          target_with_normal_rate = apply_driver_steer_torque_limits(
-            new_torque, self.apply_torque_last, CS.out.steeringTorque, CarControllerParams, steer_max)
-          if apply_torque == target_with_normal_rate:
-            self.recovering_from_blip = False
+          apply_torque = apply_driver_steer_torque_limits(
+            self.torque_before_blip, 0, CS.out.steeringTorque, snap_params, steer_max)
+          self.torque_before_blip = 0
         else:
           apply_torque = apply_driver_steer_torque_limits(new_torque, self.apply_torque_last,
                                                           CS.out.steeringTorque, CarControllerParams, steer_max)

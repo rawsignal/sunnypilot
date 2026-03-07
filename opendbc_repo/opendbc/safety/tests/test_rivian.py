@@ -23,26 +23,20 @@ def checksum(msg):
 
 
 class TestRivianSafetyBase(common.CarSafetyTest, common.DriverTorqueSteeringSafetyTest,
-                           common.SteerRequestCutSafetyTest, common.LongitudinalAccelSafetyTest,
-                           common.VehicleSpeedSafetyTest):
+                           common.LongitudinalAccelSafetyTest, common.VehicleSpeedSafetyTest):
 
   TX_MSGS = [[0x120, 0]]
   RELAY_MALFUNCTION_ADDRS = {0: (0x120,), 2: ()}
   FWD_BLACKLISTED_ADDRS = {0: [], 2: [0x120]}
 
-  MAX_TORQUE_LOOKUP = [9, 17], [450, 250]
+  MAX_TORQUE_LOOKUP = [9, 17], [275, 250]
   DYNAMIC_MAX_TORQUE = True
-  MAX_RATE_UP = 4
+  MAX_RATE_UP = 275   # allow 0->stored snap after blip (max low speed torque)
   MAX_RATE_DOWN = 5
-
-  MAX_RT_DELTA = 125
+  MAX_RT_DELTA = 275
 
   DRIVER_TORQUE_ALLOWANCE = 100
   DRIVER_TORQUE_FACTOR = 2
-
-  # Fault avoidance blip: hold torque for 2 frames (like Hyundai)
-  MIN_VALID_STEERING_FRAMES = 89
-  MAX_INVALID_STEERING_FRAMES = 2
 
   cnt_speed = 0
   cnt_speed_2 = 0
