@@ -35,15 +35,19 @@ class CarController(CarControllerBase, MadsCarController):
       apply_torque = apply_driver_steer_torque_limits(new_torque, self.apply_torque_last,
                                                       CS.out.steeringTorque, CarControllerParams, steer_max)
 
-    # Fault avoidance: cut request + drop torque when steering angle above limit for too long
+    # Fault avoidance: cut request + zero torque when steering angle above limit for too long
     self.angle_limit_counter, apply_steer_req = common_fault_avoidance(
       abs(CS.out.steeringAngleDeg) >= MAX_ANGLE, CC.latActive,
       self.angle_limit_counter, MAX_ANGLE_FRAMES, MAX_ANGLE_CONSECUTIVE_FRAMES)
 
-    # Hold torque during blip (like Hyundai) - only drop apply bit, don't zero torque
+    # Zero torque during blip, reapply full requested torque once blip is over
+    if not apply_steer_req:
+      apply_torque = 0
+    else:
+      # Only update last when not blipping so we can reapply full torque immediately when blip ends
+      self.apply_torque_last = apply_torque
 
     # send steering command
-    self.apply_torque_last = apply_torque
     can_sends.append(create_lka_steering(self.packer, self.frame, CS.acm_lka_hba_cmd, apply_torque, CC.enabled, CC.latActive, self.mads, apply_steer_req))
 
     # Longitudinal control
