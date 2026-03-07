@@ -28,7 +28,7 @@ def create_lka_steering(packer, frame, acm_lka_hba_cmd, apply_torque, enabled, a
     "ACM_lkaSymbolState": 0,
 
     # static values
-    "ACM_lkaElkRequest": 0,
+    "ACM_lkaElkRequest": 4,
     "ACM_ldwlkaOnOffState": 2,  # 2=LKAS+LDW on
     "ACM_elkOnOffState": 1,  # 1=LKAS on
     # TODO: what are these used for?
