@@ -12,6 +12,7 @@ from opendbc.sunnypilot.car.rivian.mads import MadsCarController
 MAX_ANGLE = 85  # deg (matches Hyundai)
 MAX_ANGLE_FRAMES = 89  # ~0.9s at 100 Hz before cutting (matches Hyundai)
 MAX_ANGLE_CONSECUTIVE_FRAMES = 2  # frames to cut before re-enabling (blip)
+BLIP_RECOVERY_RAMP = 20  # torque units per frame when ramping back after blip
 
 
 class CarController(CarControllerBase, MadsCarController):
@@ -21,6 +22,7 @@ class CarController(CarControllerBase, MadsCarController):
     self.apply_torque_last = 0
     self.packer = CANPacker(dbc_names[Bus.pt])
     self.angle_limit_counter = 0
+    self.recovering_from_blip = False
 
   def update(self, CC, CC_SP, CS, now_nanos):
     MadsCarController.update(self, CC, CC_SP, CS)
@@ -40,11 +42,20 @@ class CarController(CarControllerBase, MadsCarController):
       abs(CS.out.steeringAngleDeg) >= MAX_ANGLE, CC.latActive,
       self.angle_limit_counter, MAX_ANGLE_FRAMES, MAX_ANGLE_CONSECUTIVE_FRAMES)
 
-    # Zero torque during blip, reapply full requested torque once blip is over
+    # Zero torque during blip, ramp back at BLIP_RECOVERY_RAMP per frame when recovery
     if not apply_steer_req:
       apply_torque = 0
+      self.apply_torque_last = 0
+      self.recovering_from_blip = False
     else:
-      # Only update last when not blipping so we can reapply full torque immediately when blip ends
+      if self.apply_torque_last == 0:
+        self.recovering_from_blip = True
+      if self.recovering_from_blip:
+        target_torque = apply_torque
+        apply_torque = int(np.clip(apply_torque, self.apply_torque_last - BLIP_RECOVERY_RAMP,
+                                   self.apply_torque_last + BLIP_RECOVERY_RAMP))
+        if apply_torque == target_torque:
+          self.recovering_from_blip = False
       self.apply_torque_last = apply_torque
 
     # send steering command
