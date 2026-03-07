@@ -96,7 +96,9 @@ static void rivian_rx_hook(const CANPacket_t *msg) {
 
 static bool rivian_tx_hook(const CANPacket_t *msg) {
   // Rivian utilizes more torque at low speed to maintain the same lateral accel
-  // Fault avoidance blip holds torque (like Hyundai), allow steer_req=0 with torque for 2 frames
+  // Fault avoidance blip holds torque (like Hyundai), allow steer_req=0 with torque for 2 frames.
+  // max_rate_up=40 allows fast recovery ramp (openpilot uses BLIP_RECOVERY_RAMP=40); normal op still rate-limited to 4 by car controller.
+  // max_rt_delta=500 allows recovery: 40/frame * 12 frames in 250ms = 480, with margin.
   const TorqueSteeringLimits RIVIAN_STEERING_LIMITS = {
     .max_torque = 450,
     .dynamic_max_torque = true,
@@ -104,9 +106,9 @@ static bool rivian_tx_hook(const CANPacket_t *msg) {
       {9., 17., 17.},
       {450, 250, 250},
     },
-    .max_rate_up = 4,
-    .max_rate_down = 5,
-    .max_rt_delta = 125,
+    .max_rate_up = 40,
+    .max_rate_down = 40,
+    .max_rt_delta = 500,
     .driver_torque_multiplier = 2,
     .driver_torque_allowance = 100,
     .type = TorqueDriverLimited,

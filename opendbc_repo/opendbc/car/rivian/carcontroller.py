@@ -1,4 +1,6 @@
 import numpy as np
+from types import SimpleNamespace
+
 from opendbc.can import CANPacker
 from opendbc.car import Bus
 from opendbc.car.lateral import apply_driver_steer_torque_limits, common_fault_avoidance
@@ -32,10 +34,6 @@ class CarController(CarControllerBase, MadsCarController):
     apply_torque = 0
     steer_max = round(float(np.interp(CS.out.vEgoRaw, CarControllerParams.STEER_MAX_LOOKUP[0],
                                       CarControllerParams.STEER_MAX_LOOKUP[1])))
-    if self.mads.lat_active:
-      new_torque = int(round(CC.actuators.torque * steer_max))
-      apply_torque = apply_driver_steer_torque_limits(new_torque, self.apply_torque_last,
-                                                      CS.out.steeringTorque, CarControllerParams, steer_max)
 
     # Fault avoidance: cut request + zero torque when steering angle above limit for too long
     self.angle_limit_counter, apply_steer_req = common_fault_avoidance(
@@ -50,12 +48,28 @@ class CarController(CarControllerBase, MadsCarController):
     else:
       if self.apply_torque_last == 0:
         self.recovering_from_blip = True
-      if self.recovering_from_blip:
-        target_torque = apply_torque
-        apply_torque = int(np.clip(apply_torque, self.apply_torque_last - BLIP_RECOVERY_RAMP,
-                                   self.apply_torque_last + BLIP_RECOVERY_RAMP))
-        if apply_torque == target_torque:
-          self.recovering_from_blip = False
+      if self.mads.lat_active:
+        new_torque = int(round(CC.actuators.torque * steer_max))
+        # Use faster ramp rate during blip recovery (bypass normal STEER_DELTA_UP=4 limit)
+        if self.recovering_from_blip:
+          recovery_params = SimpleNamespace(
+            STEER_MAX=CarControllerParams.STEER_MAX,
+            STEER_DELTA_UP=BLIP_RECOVERY_RAMP,
+            STEER_DELTA_DOWN=BLIP_RECOVERY_RAMP,
+            STEER_DRIVER_ALLOWANCE=CarControllerParams.STEER_DRIVER_ALLOWANCE,
+            STEER_DRIVER_MULTIPLIER=CarControllerParams.STEER_DRIVER_MULTIPLIER,
+            STEER_DRIVER_FACTOR=CarControllerParams.STEER_DRIVER_FACTOR,
+          )
+          apply_torque = apply_driver_steer_torque_limits(new_torque, self.apply_torque_last,
+                                                          CS.out.steeringTorque, recovery_params, steer_max)
+          # Reached target when rate limiter didn't need to clamp (we've caught up)
+          target_with_normal_rate = apply_driver_steer_torque_limits(
+            new_torque, self.apply_torque_last, CS.out.steeringTorque, CarControllerParams, steer_max)
+          if apply_torque == target_with_normal_rate:
+            self.recovering_from_blip = False
+        else:
+          apply_torque = apply_driver_steer_torque_limits(new_torque, self.apply_torque_last,
+                                                          CS.out.steeringTorque, CarControllerParams, steer_max)
       self.apply_torque_last = apply_torque
 
     # send steering command
