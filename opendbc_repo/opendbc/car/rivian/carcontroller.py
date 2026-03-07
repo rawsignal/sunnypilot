@@ -36,9 +36,11 @@ class CarController(CarControllerBase, MadsCarController):
                                                       CS.out.steeringTorque, CarControllerParams, steer_max)
 
     # Fault avoidance: cut request + drop torque when steering angle above limit for too long
-    self.angle_limit_counter, apply_steer_req = common_fault_avoidance(
-      abs(CS.out.steeringAngleDeg) >= MAX_ANGLE, CC.latActive,
-      self.angle_limit_counter, MAX_ANGLE_FRAMES, MAX_ANGLE_CONSECUTIVE_FRAMES)
+    # Disabled for testing - bypass blip
+    # self.angle_limit_counter, apply_steer_req = common_fault_avoidance(
+    #   abs(CS.out.steeringAngleDeg) >= MAX_ANGLE, CC.latActive,
+    #   self.angle_limit_counter, MAX_ANGLE_FRAMES, MAX_ANGLE_CONSECUTIVE_FRAMES)
+    apply_steer_req = CC.latActive
 
     if not apply_steer_req:
       apply_torque = 0
