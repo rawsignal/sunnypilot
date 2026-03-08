@@ -72,6 +72,7 @@ class CarController(CarControllerBase, MadsCarController):
     # tester present - keeps ADAS ECU disabled whenever on road (controller only runs when on road)
     if self.frame % 100 == 0:
       can_sends.append(make_tester_present_msg(0x730, 0, suppress_response=True))
+      can_sends.append(make_tester_present_msg(0x730, 1, suppress_response=True))
 
     # Longitudinal control
     if self.CP.openpilotLongitudinalControl:
