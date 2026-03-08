@@ -2,7 +2,7 @@ import numpy as np
 from types import SimpleNamespace
 
 from opendbc.can import CANPacker
-from opendbc.car import Bus, make_tester_present_msg
+from opendbc.car import Bus
 from opendbc.car.lateral import apply_driver_steer_torque_limits, common_fault_avoidance
 from opendbc.car.interfaces import CarControllerBase
 from opendbc.car.rivian.riviancan import create_lka_steering, create_longitudinal
@@ -13,7 +13,7 @@ from opendbc.sunnypilot.car.rivian.mads import MadsCarController
 # EPS may fault if torque is applied above this angle for too long; cut request + drop torque before fault
 MAX_ANGLE = 87  # deg
 MAX_ANGLE_FRAMES = 89  # ~0.9s at 100 Hz before cutting (matches Hyundai)
-MAX_ANGLE_CONSECUTIVE_FRAMES = 2  # frames to cut before re-enabling (blip)
+MAX_ANGLE_CONSECUTIVE_FRAMES = 1  # frames to cut before re-enabling (blip)
 
 
 class CarController(CarControllerBase, MadsCarController):
@@ -68,11 +68,6 @@ class CarController(CarControllerBase, MadsCarController):
 
     # send steering command
     can_sends.append(create_lka_steering(self.packer, self.frame, CS.acm_lka_hba_cmd, apply_torque, CC.enabled, CC.latActive, self.mads, apply_steer_req))
-
-    # tester present - keeps ADAS ECU disabled whenever on road (controller only runs when on road)
-    if self.frame % 100 == 0:
-      can_sends.append(make_tester_present_msg(0x730, 0, suppress_response=True))
-      can_sends.append(make_tester_present_msg(0x730, 1, suppress_response=True))
 
     # Longitudinal control
     if self.CP.openpilotLongitudinalControl:

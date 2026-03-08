@@ -100,8 +100,6 @@ class TestRivianSafetyBase(common.CarSafetyTest, common.DriverTorqueSteeringSafe
 
 class TestRivianStockSafety(TestRivianSafetyBase):
 
-  TX_MSGS = [[0x120, 0], [0x730, 0], [0x730, 1]]
-  DISABLED_ECU_UDS_MSGS = [(0x730, 0), (0x730, 1)]
   LONGITUDINAL = False
 
   def setUp(self):
@@ -110,35 +108,18 @@ class TestRivianStockSafety(TestRivianSafetyBase):
     self.safety.set_safety_hooks(CarParams.SafetyModel.rivian, 0)
     self.safety.init_tests()
 
-  def test_tester_present_allowed(self):
-    """Ensure tester present is allowed on ADAS ECU address on bus 0 and bus 1."""
-    for addr, bus in ((0x730, 0), (0x730, 1)):
-      for should_tx, msg in ((True, b"\x02\x3E\x80\x00\x00\x00\x00\x00"),
-                             (False, b"\x03\xAA\xAA\x00\x00\x00\x00\x00")):
-        tester_present = libsafety_py.make_CANPacket(addr, bus, msg)
-        self.assertEqual(should_tx, self._tx(tester_present))
-
 
 class TestRivianLongitudinalSafety(TestRivianSafetyBase):
 
-  TX_MSGS = [[0x120, 0], [0x160, 0], [0x730, 0], [0x730, 1]]
+  TX_MSGS = [[0x120, 0], [0x160, 0]]
   RELAY_MALFUNCTION_ADDRS = {0: (0x120, 0x160), 2: ()}
   FWD_BLACKLISTED_ADDRS = {0: [], 2: [0x120, 0x160]}
-  DISABLED_ECU_UDS_MSGS = [(0x730, 0), (0x730, 1)]
 
   def setUp(self):
     self.packer = CANPackerSafety("rivian_primary_actuator")
     self.safety = libsafety_py.libsafety
     self.safety.set_safety_hooks(CarParams.SafetyModel.rivian, RivianSafetyFlags.LONG_CONTROL)
     self.safety.init_tests()
-
-  def test_tester_present_allowed(self):
-    """Ensure tester present is allowed on ADAS ECU address on bus 0 and bus 1."""
-    for addr, bus in ((0x730, 0), (0x730, 1)):
-      for should_tx, msg in ((True, b"\x02\x3E\x80\x00\x00\x00\x00\x00"),
-                             (False, b"\x03\xAA\xAA\x00\x00\x00\x00\x00")):
-        tester_present = libsafety_py.make_CANPacket(addr, bus, msg)
-        self.assertEqual(should_tx, self._tx(tester_present))
 
 
 if __name__ == "__main__":
