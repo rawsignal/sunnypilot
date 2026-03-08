@@ -98,17 +98,17 @@ static bool rivian_longitudinal = false;
 
 static bool rivian_tx_hook(const CANPacket_t *msg) {
   // Rivian utilizes more torque at low speed to maintain the same lateral accel
-  // Fault avoidance blip: zero torque during blip, snap back to same value after. max_rate_up=290 allows 0->stored snap (matches low speed torque limit); normal op rate-limited to 3 by car controller.
+  // Fault avoidance blip: zero torque during blip, snap back to same value after. max_rate_up=310 allows 0->stored snap (matches low speed torque limit); normal op rate-limited to 3 by car controller.
   const TorqueSteeringLimits RIVIAN_STEERING_LIMITS = {
-    .max_torque = 290,  // low speed
+    .max_torque = 310,  // low speed
     .dynamic_max_torque = true,
     .max_torque_lookup = {
       {9., 17., 17.},
-      {290, 250, 250},
+      {310, 250, 250},
     },
-    .max_rate_up = 290,   // allow 0->stored snap after blip
+    .max_rate_up = 310,   // allow 0->stored snap after blip
     .max_rate_down = 5,
-    .max_rt_delta = 275,  // allow snap within 250ms window
+    .max_rt_delta = 310,  // allow snap within 250ms window
     .driver_torque_multiplier = 2,
     .driver_torque_allowance = 100,
     .type = TorqueDriverLimited,
