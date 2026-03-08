@@ -69,11 +69,12 @@ class CarController(CarControllerBase, MadsCarController):
     # send steering command
     can_sends.append(create_lka_steering(self.packer, self.frame, CS.acm_lka_hba_cmd, apply_torque, CC.enabled, CC.latActive, self.mads, apply_steer_req))
 
+    # tester present - keeps ADAS ECU disabled whenever on road (controller only runs when on road)
+    if self.frame % 100 == 0:
+      can_sends.append(make_tester_present_msg(0x730, 0, suppress_response=True))
+
     # Longitudinal control
     if self.CP.openpilotLongitudinalControl:
-      # tester present - keeps ADAS ECU disabled (same method as Hyundai HDA2)
-      if self.frame % 100 == 0:
-        can_sends.append(make_tester_present_msg(0x730, 0, suppress_response=True))
       accel = float(np.clip(actuators.accel, CarControllerParams.ACCEL_MIN, CarControllerParams.ACCEL_MAX))
       can_sends.append(create_longitudinal(self.packer, self.frame, accel, CC.enabled))
     # VDM_AdasSts not available on this tap - cannot cancel stock ACC

@@ -123,7 +123,7 @@ static bool rivian_tx_hook(const CANPacket_t *msg) {
   bool tx = true;
 
   // UDS: only tester present ("\x02\x3E\x80\x00\x00\x00\x00\x00") allowed on ADAS ECU diagnostic address
-  if ((msg->addr == 0x730U) && rivian_longitudinal) {
+  if (msg->addr == 0x730U) {
     if ((GET_BYTES(msg, 0, 4) != 0x00803E02U) || (GET_BYTES(msg, 4, 4) != 0x0U)) {
       tx = false;
     }
@@ -154,7 +154,8 @@ static bool rivian_tx_hook(const CANPacket_t *msg) {
 
 static safety_config rivian_init(uint16_t param) {
   // 0x120 = ACM_lkaHbaCmd
-  static const CanMsg RIVIAN_TX_MSGS[] = {{0x120, 0, 8, .check_relay = true}};
+  // 0x730 = tester present for ADAS ECU disable (whenever controls active)
+  static const CanMsg RIVIAN_TX_MSGS[] = {{0x120, 0, 8, .check_relay = true}, {0x730, 0, 8, .check_relay = false}};
   // 0x160 = ACM_longitudinalRequest
   // 0x730 = tester present for ADAS ECU disable (same method as Hyundai HDA2)
   static const CanMsg RIVIAN_LONG_TX_MSGS[] = {{0x120, 0, 8, .check_relay = true}, {0x160, 0, 5, .check_relay = true}, {0x730, 0, 8, .check_relay = false}};

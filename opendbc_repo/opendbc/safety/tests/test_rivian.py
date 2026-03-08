@@ -100,6 +100,8 @@ class TestRivianSafetyBase(common.CarSafetyTest, common.DriverTorqueSteeringSafe
 
 class TestRivianStockSafety(TestRivianSafetyBase):
 
+  TX_MSGS = [[0x120, 0], [0x730, 0]]
+  DISABLED_ECU_UDS_MSG = (0x730, 0)
   LONGITUDINAL = False
 
   def setUp(self):
